@@ -1,277 +1,285 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Générateur de mot de passe</title>
-  <meta name="description" content="Générateur de mots de passe fort, 100% côté client. Aucune donnée n’est envoyée sur un serveur." />
+  <meta name="description" content="Générateur de mots de passe sécurisé (crypto) – fonctionne hors-ligne, aucune donnée envoyée." />
   <style>
     :root{
-      --bg:#0b0f14;--panel:#10161d;--panel-2:#111922;--text:#e7edf3;--muted:#a7b4c1;--accent:#4ea1ff;--accent-2:#6bffb5;--danger:#ff6b6b;--shadow:0 10px 30px rgba(0,0,0,.35);--radius:18px
+      --bg:#0f1221; --card:#171a2b; --text:#e6e9f5; --muted:#a7acc6; --accent:#7c96ff; --accent-2:#41e8c1; --danger:#ff5d7a;
+      --border:#2a2e46; --radius:14px; --radius-sm:10px; --focus:0 0 0 3px rgba(124,150,255,.35);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;background:radial-gradient(1200px 600px at 20% -10%,rgba(78,161,255,.15),transparent 60%),radial-gradient(800px 600px at 120% 20%,rgba(107,255,181,.08),transparent 50%),var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,"Helvetica Neue",Arial}
-    .wrap{max-width:950px;margin:40px auto;padding:24px}
-    header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
-    h1{font-size:clamp(1.2rem,3vw,1.6rem);margin:0}
-    .badge{font-size:.8rem;padding:.35rem .6rem;background:linear-gradient(135deg,var(--panel-2),#0b1218);border:1px solid #1b2430;border-radius:999px;color:var(--muted)}
-    .card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid #1a2330;border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
-    .stack{display:grid;gap:16px}
-    .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-    .grow{flex:1}
-    input[type="text"], input[readonly]{width:100%;padding:14px 16px;border-radius:14px;border:1px solid #1c2533;background:#0b1218;color:var(--text);font-size:1.05rem}
-    .btn{appearance:none;border:1px solid #243245;background:linear-gradient(180deg,#15202B,#0f1721);color:var(--text);padding:12px 16px;border-radius:14px;cursor:pointer;box-shadow:var(--shadow);font-weight:600}
-    .btn:hover{filter:brightness(1.08)}
-    .btn:active{transform:translateY(1px)}
-    .btn.primary{background:linear-gradient(180deg,#1a66ff,#1246b8);border-color:#1a66ff}
-    .btn.ghost{background:transparent;border-color:#203147}
-    label{display:flex;align-items:center;gap:10px;color:var(--muted)}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial;
+      color:var(--text); background: radial-gradient(1200px 800px at 10% -10%, #1b1f39 0, #0f1221 40%, #0b0e1a 100%);
+      display:flex; align-items:center; justify-content:center; padding:32px;
+    }
+    .app{width: min(900px, 96vw); display:grid; gap:18px}
+    header h1{margin:0 0 6px 0; font-weight:800; letter-spacing:.2px}
+    header p{margin:0; color:var(--muted)}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.03), transparent), var(--card);
+      border:1px solid var(--border); border-radius:var(--radius); padding:18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .row{display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center}
+    .out{
+      font: 600 20px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      background:#0b0e1a; border:1px solid var(--border); border-radius:var(--radius-sm);
+      padding:14px; overflow:auto; white-space:nowrap;
+    }
+    .btn{
+      border:1px solid var(--border); background:linear-gradient(180deg, #2a325a, #20274a);
+      color:#fff; padding:12px 16px; border-radius:12px; cursor:pointer; font-weight:700; letter-spacing:.2px;
+      transition: transform .04s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .btn:hover{box-shadow:0 10px 24px rgba(124,150,255,.25)}
+    .btn:active{transform: translateY(1px)}
+    .btn.secondary{background:#12152a}
+    .btn.ghost{background:transparent}
+    .grid{display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:14px}
+    .opt{display:flex; align-items:center; gap:10px; padding:12px; background:#101327; border:1px solid var(--border); border-radius:12px}
+    .opt input[type="checkbox"]{width:18px; height:18px}
+    label span.small{color:var(--muted); font-size:.92rem}
+    .range{
+      background:#101327; border:1px solid var(--border); padding:12px; border-radius:12px; display:grid; gap:6px
+    }
     input[type="range"]{width:100%}
-    .options{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
-    .meter{height:12px;background:#0b1218;border:1px solid #1b2634;border-radius:999px;position:relative;overflow:hidden}
-    .meter > span{position:absolute;left:0;top:0;bottom:0;width:0%;transition:width .25s ease}
-    .seg{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:2px}
-    .seg i{border-radius:999px;background:#13202c}
-    .note{font-size:.9rem;color:var(--muted)}
-    .tiny{font-size:.8rem;color:var(--muted)}
-    .footer{margin-top:18px;color:#8fa0b3;font-size:.85rem;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-    .switch{position:relative;width:44px;height:26px;background:#0b1218;border:1px solid #203147;border-radius:999px;cursor:pointer}
-    .switch input{display:none}
-    .switch .knob{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#233449;transition:left .2s ease, background .2s}
-    .switch input:checked + .knob{left:20px;background:var(--accent)}
-    kbd{background:#0b1218;border:1px solid #203147;border-bottom-width:3px;border-radius:6px;padding:2px 6px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;color:#d7e3ef}
-    a{color:var(--accent)}
+    .strength{
+      display:grid; gap:8px
+    }
+    .bar{height:10px; background:#0b0e1a; border:1px solid var(--border); border-radius:999px; overflow:hidden}
+    .bar > i{display:block; height:100%; width:0%}
+    .note{color:var(--muted); font-size:.95rem}
+    .pill{display:inline-block; padding:6px 10px; border:1px solid var(--border); border-radius:999px; font-weight:600}
+    .row-actions{display:flex; gap:10px; flex-wrap:wrap; justify-self:end}
+    footer{color:var(--muted); font-size:.9rem; text-align:center; margin-top:4px}
+    .warn{color:var(--danger)}
+    @media (max-width:560px){ .row{grid-template-columns: 1fr}; .row-actions{justify-self:stretch}}
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <main class="app" role="main">
     <header>
       <h1>🔐 Générateur de mot de passe</h1>
-      <span class="badge">100% local · open-source</span>
+      <p>Génère des mots de passe robustes localement. Aucune donnée n’est transmise.</p>
     </header>
 
-    <div class="card stack" role="region" aria-labelledby="titre-gen">
+    <section class="card">
       <div class="row">
-        <input id="output" type="text" aria-label="Mot de passe généré" readonly>
-        <button id="copy" class="btn" title="Copier" aria-label="Copier dans le presse-papiers">Copier</button>
-        <button id="regen" class="btn primary" title="Régénérer" aria-label="Générer un nouveau mot de passe">Régénérer</button>
-      </div>
-
-      <div class="row">
-        <div class="grow">
-          <label for="length">Longueur : <strong id="lenVal">16</strong></label>
-          <input id="length" type="range" min="8" max="128" value="16" step="1" />
+        <output id="password" class="out" aria-live="polite" title="Mot de passe généré">Clique sur « Générer »</output>
+        <div class="row-actions">
+          <button class="btn" id="btn-generate">Générer</button>
+          <button class="btn secondary" id="btn-copy" disabled>Copier</button>
         </div>
-        <label class="row"><input id="excludeAmbig" type="checkbox" /><span>Exclure les caractères ambigus (O/0, l/1, etc.)</span></label>
       </div>
+    </section>
 
-      <div class="options">
-        <label><input id="lower" type="checkbox" checked /> Lettres minuscules (a–z)</label>
-        <label><input id="upper" type="checkbox" checked /> Lettres majuscules (A–Z)</label>
-        <label><input id="digits" type="checkbox" checked /> Chiffres (0–9)</label>
-        <label><input id="symbols" type="checkbox" /> Symboles (!@#$…)</label>
-        <label><input id="noRepeat" type="checkbox" /> Interdire les doublons</label>
-        <label class="row">Exclure : <input id="excludeChars" type="text" placeholder="caractères à exclure (ex: %*^€)" /></label>
-      </div>
+    <section class="card grid" aria-labelledby="opts-title">
+      <h2 id="opts-title" style="margin:0 0 -6px 0; grid-column:1/-1; font-size:1.05rem; color:var(--muted)">Options</h2>
 
-      <div class="stack">
-        <div class="row" aria-live="polite" aria-atomic="true">
-          <div class="meter grow" title="Indice de robustesse">
-            <div class="seg"><i></i><i></i><i></i><i></i></div>
-            <span id="meterFill"></span>
-          </div>
-          <div id="strengthLabel" class="badge" style="white-space:nowrap">Entropie : 0 bits</div>
+      <div class="range">
+        <div class="row" style="grid-template-columns:auto 1fr auto">
+          <label for="length"><strong>Longueur</strong></label>
+          <input id="length" type="range" min="8" max="64" value="16" />
+          <span><span id="len-val" class="pill">16</span></span>
         </div>
-        <div class="tiny">Astuce : utilisez au moins 16 caractères. Évitez les phrases courantes. Pour des comptes critiques, activez l’authentification à deux facteurs.</div>
+        <div class="note">Recommandé : 16+ pour comptes sensibles, 24–32 pour coffres/administration.</div>
       </div>
-    </div>
 
-    <div class="footer">
-      <div>
-        <strong>Confidentialité :</strong> tout est généré dans votre navigateur (<code>window.crypto</code>). Rien n’est envoyé nulle part.
+      <label class="opt"><input type="checkbox" id="use-lower" checked /> Lettres minuscules (a–z)</label>
+      <label class="opt"><input type="checkbox" id="use-upper" checked /> Lettres majuscules (A–Z)</label>
+      <label class="opt"><input type="checkbox" id="use-digits" checked /> Chiffres (0–9)</label>
+      <label class="opt"><input type="checkbox" id="use-symbols" /> Symboles (!@#$…)</label>
+
+      <label class="opt"><input type="checkbox" id="avoid-ambig" checked /> Éviter les caractères ambigus (O/0, l/1, etc.)</label>
+      <label class="opt"><input type="checkbox" id="ensure-each" checked /> Garantir au moins un caractère de chaque type choisi</label>
+      <label class="opt"><input type="checkbox" id="no-repeats" /> Interdire les répétitions immédiates (aa, 11, …)</label>
+      <label class="opt"><input type="checkbox" id="readable" /> Lisible (insère des séparateurs)</label>
+    </section>
+
+    <section class="card strength" aria-labelledby="strength-title">
+      <div class="row" style="grid-template-columns:auto auto 1fr">
+        <h2 id="strength-title" style="margin:0; font-size:1.05rem; color:var(--muted)">Robustesse</h2>
+        <span id="entropy" class="pill" title="Entropie estimée en bits">– bits</span>
+        <div style="justify-self:end"><span id="label" class="pill">—</span></div>
       </div>
-      <div>
-        <label class="switch" title="Toggle thème">
-          <input id="theme" type="checkbox" />
-          <span class="knob"></span>
-        </label>
+      <div class="bar"><i id="bar-fill"></i></div>
+      <div class="note">
+        Estimation basée sur l’entropie <em>H ≈ log2(N^L)</em> (alphabet N, longueur L), ajustée si « au moins un de chaque » est imposé.
+        Plus c’est grand, mieux c’est. Vise 80–100+ bits pour du long terme.
       </div>
-    </div>
+    </section>
 
-  </div>
+    <footer>
+      <p>💡 Astuce : utilise un gestionnaire de mots de passe et active la 2FA. | <span class="warn">Ne recycle jamais</span> tes mots de passe.</p>
+    </footer>
+  </main>
 
-<script>
-(function(){
-  'use strict';
-  // Character sets
-  const LOWER = 'abcdefghijklmnopqrstuvwxyz';
-  const UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const DIGITS = '0123456789';
-  const SYMBOLS = '!@#$%^&*()-_=+[]{};:,.?/\\|`~\"\' + "'«»‹›“”’€£¥…·•"; // include some EU symbols
-  const AMBIG = new Set('Il1O0oB8S5Z2\u00B5');
+  <script>
+    // --- Charsets (avec et sans caractères ambigus) ---
+    const sets = {
+      lower: 'abcdefghijklmnopqrstuvwxyz',
+      upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      digits: '0123456789',
+      symbols: '!@#$%^&*()-_=+[]{};:,.?/|~'
+    };
+    const ambiguous = new Set('O0oIl1|`\'"“”‘’[]{}()<>.,');
 
-  // UI elements
-  const $ = id => document.getElementById(id);
-  const output = $('output');
-  const copyBtn = $('copy');
-  const regenBtn = $('regen');
-  const lengthEl = $('length');
-  const lenVal = $('lenVal');
-  const eLower = $('lower');
-  const eUpper = $('upper');
-  const eDigits = $('digits');
-  const eSymbols = $('symbols');
-  const eNoRepeat = $('noRepeat');
-  const eExcludeAmbig = $('excludeAmbig');
-  const eExcludeChars = $('excludeChars');
-  const meterFill = $('meterFill');
-  const strengthLabel = $('strengthLabel');
-  const theme = $('theme');
+    const el = (id) => document.getElementById(id);
+    const out = el('password');
+    const copyBtn = el('btn-copy');
+    const genBtn  = el('btn-generate');
+    const lenRange = el('length');
+    const lenVal = el('len-val');
 
-  // Helper: cryptographically secure random integer in [0, max)
-  function rnd(max){
-    if(max <= 0) return 0;
-    const arr = new Uint32Array(1);
-    let limit = Math.floor(0x100000000 / max) * max; // rejection sampling to avoid bias
-    do { crypto.getRandomValues(arr); } while(arr[0] >= limit);
-    return arr[0] % max;
-  }
+    const chk = {
+      lower: el('use-lower'),
+      upper: el('use-upper'),
+      digits: el('use-digits'),
+      symbols: el('use-symbols'),
+      ambig: el('avoid-ambig'),
+      ensure: el('ensure-each'),
+      norep: el('no-repeats'),
+      readable: el('readable')
+    };
 
-  function buildPool(){
-    let pool = '';
-    if(eLower.checked) pool += LOWER;
-    if(eUpper.checked) pool += UPPER;
-    if(eDigits.checked) pool += DIGITS;
-    if(eSymbols.checked) pool += SYMBOLS;
-    // Remove excluded & ambiguous
-    const exclude = new Set((eExcludeChars.value || '').split(''));
-    let filtered = '';
-    for(const ch of pool){
-      if(eExcludeAmbig.checked && AMBIG.has(ch)) continue;
-      if(exclude.has(ch)) continue;
-      filtered += ch;
-    }
-    return Array.from(new Set(filtered.split(''))).join(''); // de-dup in case
-  }
+    const entropyEl = el('entropy');
+    const labelEl = el('label');
+    const barFill = el('bar-fill');
 
-  function generate(){
-    const length = parseInt(lengthEl.value,10);
-    let pool = buildPool();
-    if(pool.length === 0){
-      output.value = '';
-      updateStrength(0, 0);
-      return;
-    }
-
-    // Ensure at least one from each selected set
-    const required = [];
-    if(eLower.checked) required.push(LOWER);
-    if(eUpper.checked) required.push(UPPER);
-    if(eDigits.checked) required.push(DIGITS);
-    if(eSymbols.checked) required.push(SYMBOLS);
-
-    // Filter required chars according to exclusions
-    const reqChars = [];
-    for(const set of required){
-      const candidates = set.split('').filter(ch => buildPool().includes(ch));
-      if(candidates.length){
-        reqChars.push(candidates[rnd(candidates.length)]);
+    function cryptoRandInt(maxExclusive){
+      // Renvoie un entier uniforme [0, maxExclusive)
+      if (maxExclusive <= 0) return 0;
+      const array = new Uint32Array(1);
+      const limit = Math.floor(0xFFFFFFFF / maxExclusive) * maxExclusive; // rejet pour uniformité
+      while (true){
+        crypto.getRandomValues(array);
+        const x = array[0];
+        if (x < limit) return x % maxExclusive;
       }
     }
 
-    let pwd = [];
-    const used = new Set();
-
-    // Place required characters first
-    for(const ch of reqChars){
-      pwd.push(ch);
-      if(eNoRepeat.checked) used.add(ch);
+    function buildAlphabet(){
+      let chars = '';
+      if (chk.lower.checked) chars += sets.lower;
+      if (chk.upper.checked) chars += sets.upper;
+      if (chk.digits.checked) chars += sets.digits;
+      if (chk.symbols.checked) chars += sets.symbols;
+      if (chk.ambig.checked){
+        chars = [...chars].filter(c => !ambiguous.has(c)).join('');
+      }
+      return chars;
     }
 
-    // Fill remaining positions
-    while(pwd.length < length){
-      let ch = pool[rnd(pool.length)];
-      if(eNoRepeat.checked && used.has(ch)) continue;
-      pwd.push(ch);
-      if(eNoRepeat.checked) used.add(ch);
-      if(used.size >= pool.length && eNoRepeat.checked) break; // cannot add more unique chars
+    function pickFrom(str){ return str[cryptoRandInt(str.length)] }
+
+    function generate(){
+      const L = parseInt(lenRange.value, 10);
+      let alpha = buildAlphabet();
+      if (!alpha){ alert('Sélectionne au moins un type de caractères.'); return; }
+
+      // Si lisible, on insèrera des séparateurs visuels mais on compte toujours L "caractères utiles".
+      const sep = chk.readable.checked ? '-' : '';
+      const groupSize = 4;
+
+      // Construire mot de passe
+      let pwd = '';
+
+      // Garantir un de chaque type choisi
+      const pools = [];
+      if (chk.ensure.checked){
+        if (chk.lower.checked) pools.push(sets.lower);
+        if (chk.upper.checked) pools.push(sets.upper);
+        if (chk.digits.checked) pools.push(sets.digits);
+        if (chk.symbols.checked) pools.push(sets.symbols);
+      }
+
+      // Pré-sélection pour garantir la contrainte
+      let required = '';
+      for (const p of pools){
+        let candidate = p;
+        if (chk.ambig.checked) candidate = [...p].filter(c => !ambiguous.has(c)).join('');
+        if (candidate.length) required += pickFrom(candidate);
+      }
+
+      // Remplissage du reste
+      let remaining = Math.max(0, L - required.length);
+      let core = required;
+      for (let i = 0; i < remaining; i++){
+        let c;
+        do {
+          c = pickFrom(alpha);
+        } while (chk.norep.checked && core.length && c === core.at(-1));
+        core += c;
+      }
+
+      // Mélange Fisher–Yates sécurisé
+      let arr = core.split('');
+      for (let i = arr.length - 1; i > 0; i--){
+        const j = cryptoRandInt(i + 1);
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+
+      // Ajout séparateurs lisibles (optionnel, n’affecte pas L)
+      if (chk.readable.checked){
+        const groups = [];
+        for (let i = 0; i < arr.length; i += groupSize) groups.push(arr.slice(i, i+groupSize).join(''));
+        pwd = groups.join(sep);
+      } else {
+        pwd = arr.join('');
+      }
+
+      out.textContent = pwd;
+      copyBtn.disabled = !pwd;
+      updateStrength(alpha.length, L, chk.ensure.checked ? pools.length : 0);
     }
 
-    // If we could not reach desired length due to noRepeat, warn softly
-    if(pwd.length < length && eNoRepeat.checked){
-      // do nothing visually obtrusive; length is best-effort
+    function updateStrength(N, L, k){
+      // Entropie approximative : H = L*log2(N) - pénalité légère si "au moins un de chaque (k)" (contrainte réduit légèrement l’espace)
+      const log2 = (x) => Math.log(x) / Math.log(2);
+      let H = L * log2(Math.max(2, N));
+      if (k >= 2 && L > k){
+        H -= (k - 1) * log2(L); // pénalité grossière pour la contrainte
+      }
+      const bits = Math.max(0, Math.round(H));
+      entropyEl.textContent = bits + ' bits';
+
+      // Label + barre
+      let label = 'Faible', pct = Math.min(100, Math.round(bits / 1.2)); // map approximative
+      if (bits >= 80) label = 'Fort';
+      if (bits >= 100) label = 'Très fort';
+      if (bits >= 128) label = 'Extrême';
+      labelEl.textContent = label;
+      barFill.style.width = Math.min(100, (bits / 128) * 100) + '%';
+      barFill.style.background = bits < 60 ? 'linear-gradient(90deg, #ff5d7a, #ff996a)' :
+                                 bits < 90 ? 'linear-gradient(90deg, #ffb86c, #ffd56a)' :
+                                 bits < 120 ? 'linear-gradient(90deg, #7cffa1, #41e8c1)' :
+                                              'linear-gradient(90deg, #7c96ff, #41e8c1)';
     }
 
-    // Shuffle (Fisher–Yates)
-    for(let i = pwd.length - 1; i > 0; i--){
-      const j = rnd(i + 1); [pwd[i], pwd[j]] = [pwd[j], pwd[i]];
-    }
-
-    const result = pwd.join('');
-    output.value = result;
-    updateStrength(result.length, pool.length);
-  }
-
-  function updateStrength(len, poolSize){
-    const bits = (poolSize > 0 && len > 0) ? (len * Math.log2(poolSize)) : 0;
-    const pct = Math.max(0, Math.min(100, Math.round((bits / 128) * 100))); // 128 bits ~ excellent
-    meterFill.style.width = pct + '%';
-    let label = 'Faible';
-    if(bits >= 64 && bits < 90) label = 'Correct';
-    else if(bits >= 90 && bits < 128) label = 'Fort';
-    else if(bits >= 128) label = 'Excellent';
-    strengthLabel.textContent = `Entropie: ${bits.toFixed(1)} bits • ${label}`;
-    meterFill.style.background = bits>=128? 'linear-gradient(90deg,#4caf50,#6bffb5)': bits>=90? 'linear-gradient(90deg,#8bc34a,#4caf50)': bits>=64? 'linear-gradient(90deg,#ffc107,#8bc34a)': 'linear-gradient(90deg,#ff6b6b,#ff8a80)';
-  }
-
-  function copy(){
-    const val = output.value;
-    if(!val) return;
-    navigator.clipboard.writeText(val).then(()=>{
-      copyBtn.textContent = 'Copié !';
-      setTimeout(()=> copyBtn.textContent = 'Copier', 1400);
-    }).catch(()=>{
-      output.select(); document.execCommand('copy');
-      copyBtn.textContent = 'Copié !';
-      setTimeout(()=> copyBtn.textContent = 'Copier', 1400);
+    // UI handlers
+    genBtn.addEventListener('click', generate);
+    copyBtn.addEventListener('click', async () => {
+      const text = out.textContent.trim();
+      if (!text) return;
+      try{
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = 'Copié ✔';
+        setTimeout(()=> copyBtn.textContent = 'Copier', 1200);
+      }catch{
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
     });
-  }
+    lenRange.addEventListener('input', () => { lenVal.textContent = lenRange.value });
 
-  function saveSettings(){
-    const data = {
-      length: lengthEl.value, lower: eLower.checked, upper: eUpper.checked,
-      digits: eDigits.checked, symbols: eSymbols.checked, noRepeat: eNoRepeat.checked,
-      excludeAmbig: eExcludeAmbig.checked, excludeChars: eExcludeChars.value
-    };
-    try{ localStorage.setItem('pwgen-settings', JSON.stringify(data)); }catch(e){}
-  }
-  function loadSettings(){
-    try{
-      const raw = localStorage.getItem('pwgen-settings');
-      if(!raw) return; const d = JSON.parse(raw);
-      lengthEl.value = d.length ?? 16; lenVal.textContent = lengthEl.value;
-      eLower.checked = !!d.lower; eUpper.checked = !!d.upper; eDigits.checked = !!d.digits; eSymbols.checked = !!d.symbols;
-      eNoRepeat.checked = !!d.noRepeat; eExcludeAmbig.checked = !!d.excludeAmbig; eExcludeChars.value = d.excludeChars || '';
-    }catch(e){}
-  }
-
-  function toggleTheme(){
-    const dark = document.documentElement.classList.toggle('light');
-  }
-
-  // Bindings
-  lengthEl.addEventListener('input', ()=>{ lenVal.textContent = lengthEl.value; generate(); saveSettings(); });
-  [eLower,eUpper,eDigits,eSymbols,eNoRepeat,eExcludeAmbig].forEach(el=> el.addEventListener('change', ()=>{ generate(); saveSettings(); }));
-  eExcludeChars.addEventListener('input', ()=>{ generate(); saveSettings(); });
-  copyBtn.addEventListener('click', copy);
-  regenBtn.addEventListener('click', generate);
-  theme.addEventListener('change', toggleTheme);
-
-  // Init
-  loadSettings();
-  generate();
-})();
-</script>
+    // Génère automatiquement une première proposition
+    window.addEventListener('DOMContentLoaded', generate);
+  </script>
 </body>
 </html>
