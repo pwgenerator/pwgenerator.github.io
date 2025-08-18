@@ -5,6 +5,26 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Générateur de mot de passe</title>
   <meta name="description" content="Générateur de mots de passe sécurisé (crypto) – fonctionne hors-ligne, aucune donnée envoyée." />
+
+  <!-- Lien vers la politique de confidentialité -->
+  <link rel="privacy-policy" href="/privacy.html" />
+
+  <!-- Google Consent Mode v2 (par défaut: denied ; ta CMP mettra à jour) -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'analytics_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'wait_for_update': 500
+    });
+  </script>
+
+  <!-- Auto ads AdSense (REMPLACE client par ton ID ca-pub-XXXXXXXXXXXX) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2997467743646399" crossorigin="anonymous"></script>
+
   <style>
     :root{
       --bg:#0f1221; --card:#171a2b; --text:#e6e9f5; --muted:#a7acc6; --accent:#7c96ff; --accent-2:#41e8c1; --danger:#ff5d7a;
@@ -48,9 +68,7 @@
       background:#101327; border:1px solid var(--border); padding:12px; border-radius:12px; display:grid; gap:6px
     }
     input[type="range"]{width:100%}
-    .strength{
-      display:grid; gap:8px
-    }
+    .strength{display:grid; gap:8px}
     .bar{height:10px; background:#0b0e1a; border:1px solid var(--border); border-radius:999px; overflow:hidden}
     .bar > i{display:block; height:100%; width:0%}
     .note{color:var(--muted); font-size:.95rem}
@@ -70,7 +88,7 @@
 
     <section class="card">
       <div class="row">
-        <output id="password" class="out" aria-live="polite" title="Mot de passe généré">Clique sur « Générer »</output>
+        <output id="password" class="out" aria-live="polite" title="Mot de passe généré">Clique sur « Générer »</output>
         <div class="row-actions">
           <button class="btn" id="btn-generate">Générer</button>
           <button class="btn secondary" id="btn-copy" disabled>Copier</button>
@@ -109,13 +127,16 @@
       </div>
       <div class="bar"><i id="bar-fill"></i></div>
       <div class="note">
-        Estimation basée sur l’entropie <em>H ≈ log2(N^L)</em> (alphabet N, longueur L), ajustée si « au moins un de chaque » est imposé.
+        Estimation basée sur l’entropie <em>H ≈ log2(N^L)</em> (alphabet N, longueur L), ajustée si « au moins un de chaque » est imposé.
         Plus c’est grand, mieux c’est. Vise 80–100+ bits pour du long terme.
       </div>
     </section>
 
     <footer>
-      <p>💡 Astuce : utilise un gestionnaire de mots de passe et active la 2FA. | <span class="warn">Ne recycle jamais</span> tes mots de passe.</p>
+      <p>💡 Astuce : utilise un gestionnaire de mots de passe et active la 2FA. |
+         <span class="warn">Ne recycle jamais</span> tes mots de passe. |
+         <a href="/privacy.html" style="color:inherit">Confidentialité</a>
+      </p>
     </footer>
   </main>
 
@@ -152,17 +173,15 @@
     const barFill = el('bar-fill');
 
     function cryptoRandInt(maxExclusive){
-      // Renvoie un entier uniforme [0, maxExclusive)
       if (maxExclusive <= 0) return 0;
       const array = new Uint32Array(1);
-      const limit = Math.floor(0xFFFFFFFF / maxExclusive) * maxExclusive; // rejet pour uniformité
+      const limit = Math.floor(0xFFFFFFFF / maxExclusive) * maxExclusive;
       while (true){
         crypto.getRandomValues(array);
         const x = array[0];
         if (x < limit) return x % maxExclusive;
       }
     }
-
     function buildAlphabet(){
       let chars = '';
       if (chk.lower.checked) chars += sets.lower;
@@ -174,7 +193,6 @@
       }
       return chars;
     }
-
     function pickFrom(str){ return str[cryptoRandInt(str.length)] }
 
     function generate(){
@@ -182,14 +200,10 @@
       let alpha = buildAlphabet();
       if (!alpha){ alert('Sélectionne au moins un type de caractères.'); return; }
 
-      // Si lisible, on insèrera des séparateurs visuels mais on compte toujours L "caractères utiles".
       const sep = chk.readable.checked ? '-' : '';
       const groupSize = 4;
-
-      // Construire mot de passe
       let pwd = '';
 
-      // Garantir un de chaque type choisi
       const pools = [];
       if (chk.ensure.checked){
         if (chk.lower.checked) pools.push(sets.lower);
@@ -198,7 +212,6 @@
         if (chk.symbols.checked) pools.push(sets.symbols);
       }
 
-      // Pré-sélection pour garantir la contrainte
       let required = '';
       for (const p of pools){
         let candidate = p;
@@ -206,7 +219,6 @@
         if (candidate.length) required += pickFrom(candidate);
       }
 
-      // Remplissage du reste
       let remaining = Math.max(0, L - required.length);
       let core = required;
       for (let i = 0; i < remaining; i++){
@@ -217,14 +229,12 @@
         core += c;
       }
 
-      // Mélange Fisher–Yates sécurisé
       let arr = core.split('');
       for (let i = arr.length - 1; i > 0; i--){
         const j = cryptoRandInt(i + 1);
         [arr[i], arr[j]] = [arr[j], arr[i]];
       }
 
-      // Ajout séparateurs lisibles (optionnel, n’affecte pas L)
       if (chk.readable.checked){
         const groups = [];
         for (let i = 0; i < arr.length; i += groupSize) groups.push(arr.slice(i, i+groupSize).join(''));
@@ -239,17 +249,15 @@
     }
 
     function updateStrength(N, L, k){
-      // Entropie approximative : H = L*log2(N) - pénalité légère si "au moins un de chaque (k)" (contrainte réduit légèrement l’espace)
       const log2 = (x) => Math.log(x) / Math.log(2);
       let H = L * log2(Math.max(2, N));
       if (k >= 2 && L > k){
-        H -= (k - 1) * log2(L); // pénalité grossière pour la contrainte
+        H -= (k - 1) * log2(L);
       }
       const bits = Math.max(0, Math.round(H));
       entropyEl.textContent = bits + ' bits';
 
-      // Label + barre
-      let label = 'Faible', pct = Math.min(100, Math.round(bits / 1.2)); // map approximative
+      let label = 'Faible';
       if (bits >= 80) label = 'Fort';
       if (bits >= 100) label = 'Très fort';
       if (bits >= 128) label = 'Extrême';
@@ -261,7 +269,6 @@
                                               'linear-gradient(90deg, #7c96ff, #41e8c1)';
     }
 
-    // UI handlers
     genBtn.addEventListener('click', generate);
     copyBtn.addEventListener('click', async () => {
       const text = out.textContent.trim();
@@ -271,14 +278,11 @@
         copyBtn.textContent = 'Copié ✔';
         setTimeout(()=> copyBtn.textContent = 'Copier', 1200);
       }catch{
-        // Fallback
         const ta = document.createElement('textarea');
         ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
       }
     });
     lenRange.addEventListener('input', () => { lenVal.textContent = lenRange.value });
-
-    // Génère automatiquement une première proposition
     window.addEventListener('DOMContentLoaded', generate);
   </script>
 </body>
